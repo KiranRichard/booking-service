@@ -1,9 +1,6 @@
 package com.online.bus.ticket.reservation.booking.model;
 
-import jakarta.persistence.Entity;
-import jakarta.persistence.Id;
-import jakarta.persistence.JoinColumn;
-import jakarta.persistence.OneToOne;
+import jakarta.persistence.*;
 import lombok.Data;
 import org.hibernate.annotations.CreationTimestamp;
 import org.hibernate.annotations.UpdateTimestamp;
@@ -15,7 +12,9 @@ import java.time.LocalDateTime;
 public class TicketBookingDetails {
     @Id
     private long ticketBookingDetailsId;
+    @Column(insertable=false, updatable=false)
     private long passengerId;
+    @Column(insertable=false, updatable=false)
     private long bookingId;
     private String status;
     @CreationTimestamp

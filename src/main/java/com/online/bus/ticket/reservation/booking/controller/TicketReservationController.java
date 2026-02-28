@@ -11,7 +11,7 @@ import org.springframework.web.bind.annotation.*;
 @RestController
 @AllArgsConstructor
 @Slf4j
-@RequestMapping("/api/book-tickets")
+@RequestMapping("/api/reserve-tickets")
 public class TicketReservationController {
 
     private final TicketReservationService ticketReservationService;

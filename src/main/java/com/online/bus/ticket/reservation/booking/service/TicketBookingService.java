@@ -57,9 +57,9 @@ public class TicketBookingService {
         ticketBooking.setTravelDateTime(ticketBookingRequest.getTravelDateTime());
         ticketBooking.setSource(ticketBookingRequest.getSource());
         ticketBooking.setDestination(ticketBookingRequest.getDestination());
-        ticketBooking.setTotalSeats(ticketBooking.getTotalSeats());
+        ticketBooking.setTotalSeats(ticketBookingRequest.getTotalSeats());
         ticketBooking.setBookedBy(ticketBookingRequest.getBookedBy());
-        ticketBooking.setStatus(BookingStatus.findByName(ticketBooking.getStatus()).name());
+        ticketBooking.setStatus(BookingStatus.findByName(ticketBookingRequest.getStatus()).name());
         return ticketBooking;
     }
 }

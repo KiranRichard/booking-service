@@ -3,7 +3,6 @@ package com.online.bus.ticket.reservation.booking.request;
 import lombok.Data;
 
 import java.time.LocalDateTime;
-import java.util.List;
 
 @Data
 public class TicketBookingRequest {
@@ -15,7 +14,6 @@ public class TicketBookingRequest {
     private String source;
     private String destination;
     private int totalSeats;
-    private List<PassengerRequest> passengerRequests;
     private long bookedBy;
     private String status;
 }
