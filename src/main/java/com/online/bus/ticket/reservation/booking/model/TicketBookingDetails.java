@@ -16,11 +16,7 @@ public class TicketBookingDetails {
     @Id
     @GeneratedValue(strategy = GenerationType.AUTO)
     private long ticketBookingDetailsId;
-    //@OneToMany
-    //@Column(insertable=false, updatable=false)
     private long passengerId;
-    //@OneToMany
-    //@Column(insertable=false, updatable=false)
     private long bookingId;
     private String status;
     @CreationTimestamp
@@ -29,12 +25,4 @@ public class TicketBookingDetails {
     private LocalDateTime updatedDateTime;
     private LocalDateTime cancellationDateTime;
     private String reasonForCancellation;
-
-    /*@OneToOne
-    @JoinColumn(name = "passengerId")
-    private Passenger passenger;
-
-    @OneToOne
-    @JoinColumn(name = "bookingId")
-    private TicketBooking ticketBooking;*/
 }

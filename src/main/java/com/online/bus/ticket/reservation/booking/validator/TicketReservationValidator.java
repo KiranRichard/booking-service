@@ -41,8 +41,8 @@ public class TicketReservationValidator {
             }
         }
         else {
-            log.info("[Error]: Invalid Create passenger request is null");
-            throw new RequiredFieldsMissingException("Invalid Create passenger request is null");
+            log.info("[Error]: Invalid Create passenger list request is null");
+            throw new RequiredFieldsMissingException("Invalid Create passenger list request is null");
         }
     }
 
