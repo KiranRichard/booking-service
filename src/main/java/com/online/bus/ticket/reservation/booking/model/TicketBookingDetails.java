@@ -11,10 +11,13 @@ import java.time.LocalDateTime;
 @Entity
 public class TicketBookingDetails {
     @Id
+    @GeneratedValue(strategy = GenerationType.AUTO)
     private long ticketBookingDetailsId;
-    @Column(insertable=false, updatable=false)
+    //@OneToMany
+    //@Column(insertable=false, updatable=false)
     private long passengerId;
-    @Column(insertable=false, updatable=false)
+    //@OneToMany
+    //@Column(insertable=false, updatable=false)
     private long bookingId;
     private String status;
     @CreationTimestamp
@@ -22,11 +25,11 @@ public class TicketBookingDetails {
     @UpdateTimestamp
     private LocalDateTime updatedDateTime;
 
-    @OneToOne
+    /*@OneToOne
     @JoinColumn(name = "passengerId")
     private Passenger passenger;
 
     @OneToOne
     @JoinColumn(name = "bookingId")
-    private TicketBooking ticketBooking;
+    private TicketBooking ticketBooking;*/
 }
