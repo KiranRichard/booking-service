@@ -10,7 +10,6 @@ public class TicketBookingRequest {
     private long busNumber;
     private LocalDateTime bookingDateTime;
     private LocalDateTime travelDateTime;
-    private LocalDateTime cancellationDateTime;
     private String source;
     private String destination;
     private int totalSeats;

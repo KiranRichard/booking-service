@@ -2,7 +2,7 @@ package com.online.bus.ticket.reservation.booking.enums;
 
 public enum BookingStatus {
 
-    PENDING, CONFIRMED, REFUNDED;
+    PENDING, CANCELLED, CONFIRMED, REFUNDED, COMPLETED;
 
     public static BookingStatus findByName(String name) {
         BookingStatus bookingStatus = null;
