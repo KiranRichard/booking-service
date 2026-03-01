@@ -24,7 +24,6 @@ public class TicketBooking {
     private String destination;
     private int totalSeats;
     private long bookedBy;
-    private String status;
     @CreationTimestamp
     private LocalDateTime createdDateTime;
     @UpdateTimestamp

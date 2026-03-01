@@ -9,10 +9,7 @@ import com.online.bus.ticket.reservation.booking.model.TicketBookingDetails;
 import com.online.bus.ticket.reservation.booking.repository.TicketBookingDetailsRepository;
 import com.online.bus.ticket.reservation.booking.request.PassengerRequest;
 import com.online.bus.ticket.reservation.booking.request.TicketReservationRequest;
-import com.online.bus.ticket.reservation.booking.response.AddressResponse;
-import com.online.bus.ticket.reservation.booking.response.PassengerResponse;
-import com.online.bus.ticket.reservation.booking.response.TicketBookingResponse;
-import com.online.bus.ticket.reservation.booking.response.TicketDetails;
+import com.online.bus.ticket.reservation.booking.response.*;
 import com.online.bus.ticket.reservation.booking.validator.PassengerRequestValidator;
 import lombok.AllArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -31,11 +28,33 @@ public class TicketReservationService {
     private final TicketBookingDetailsRepository ticketBookingDetailsRepository;
     private final TicketBookingService ticketBookingService;
     private final PassengerService passengerService;
+    private final BusInventoryClientService busInventoryClientService;
     private final PassengerRequestValidator passengerRequestValidator;
 
     public String createTicketBookingDetails(TicketReservationRequest ticketReservationRequest) {
         log.info("Inside TicketBookingDetailsService: createTicketBookingDetails method");
 
+        //TO DO: Check for the availability of seats Rest api call to inventory microservice
+        BusInventory busInventory = busInventoryClientService.fetchSeatAvailabilityDetails
+                (ticketReservationRequest.getTicketBookingRequest().getBusNumber());
+        if (Objects.isNull(busInventory)) {
+            log.info("[Error] The bus inventory details are not found");
+            throw new TicketBookingException("The bus inventory details are not found");
+        }
+        if (ticketReservationRequest.getTicketBookingRequest().getTotalSeats() <= busInventory.getAvailableSeats()){
+            performBooking(ticketReservationRequest);
+            //TO Do: kafka message to payment microservice
+        }
+        else {
+            log.info("[Error] Seats are not available");
+            throw new TicketBookingException("Seats are not available, booking can't be proceeded");
+        }
+        //TO Do: kafka message to payment microservice
+        return "Ticket Booking initiated successfully";
+    }
+
+    private void performBooking(TicketReservationRequest ticketReservationRequest) {
+        //TO Do: Checks if the seats are available for booking : then proceed, else stop
         TicketBooking ticketBooking = ticketBookingService.createTicketBooking(ticketReservationRequest.getTicketBookingRequest());
         if (ticketBooking.getBookingId()<=0) {
             log.info("[Error]: Ticket Booking creation in the database failed: {}", ticketBooking);
@@ -49,7 +68,7 @@ public class TicketReservationService {
             }
             saveTicketBookingDetails(ticketBooking.getBookingId(), passenger.getPassengerId());
         }
-        return "Ticket Booking initiated successfully";
+        //TO Do: kafka message to payment microservice
     }
 
     private void saveTicketBookingDetails(long bookingId, long passengerId) {
@@ -131,7 +150,6 @@ public class TicketReservationService {
         ticketBookingResponse.setDestination(ticketBooking.getDestination());
         ticketBookingResponse.setTotalSeats(ticketBooking.getTotalSeats());
         ticketBookingResponse.setBookedBy(ticketBooking.getBookedBy());
-        ticketBookingResponse.setStatus(ticketBooking.getStatus());
         ticketBookingResponse.setCreatedDateTime(ticketBooking.getCreatedDateTime());
         ticketBookingResponse.setUpdatedDateTime(ticketBooking.getUpdatedDateTime());
         return ticketBookingResponse;

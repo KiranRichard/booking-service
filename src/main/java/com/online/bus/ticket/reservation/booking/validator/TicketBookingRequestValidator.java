@@ -67,4 +67,11 @@ public class TicketBookingRequestValidator {
             throw new RequiredFieldsMissingException("Invalid ticketBookingId field in request: {}"+ ticketBookingId);
         }
     }
+
+    public void validateBusNumber(long busNumber) {
+        if(busNumber<=0) {
+            log.info("[Error]: Invalid bus number is Ticket Booking request");
+            throw new RequiredFieldsMissingException("Invalid bus number is Ticket Booking request");
+        }
+    }
 }

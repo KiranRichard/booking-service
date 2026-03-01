@@ -1,6 +1,5 @@
 package com.online.bus.ticket.reservation.booking.service;
 
-import com.online.bus.ticket.reservation.booking.enums.BookingStatus;
 import com.online.bus.ticket.reservation.booking.exception.TicketBookingException;
 import com.online.bus.ticket.reservation.booking.model.TicketBooking;
 import com.online.bus.ticket.reservation.booking.repository.TicketBookingRepository;
@@ -59,7 +58,6 @@ public class TicketBookingService {
         ticketBooking.setDestination(ticketBookingRequest.getDestination());
         ticketBooking.setTotalSeats(ticketBookingRequest.getTotalSeats());
         ticketBooking.setBookedBy(ticketBookingRequest.getBookedBy());
-        ticketBooking.setStatus(BookingStatus.findByName(ticketBookingRequest.getStatus()).name());
         return ticketBooking;
     }
 }
