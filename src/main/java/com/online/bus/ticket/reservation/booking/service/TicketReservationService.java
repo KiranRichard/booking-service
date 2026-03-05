@@ -80,6 +80,8 @@ public class TicketReservationService {
         paymentRequest.setAmount(totalAmount);
         paymentRequest.setPaymentStatus(BookingStatus.PENDING.name());
         paymentRequest.setPaymentDateTime(LocalDateTime.now());
+        paymentRequest.setBusRouteNum(ticketBooking.getBusNumber());
+        paymentRequest.setNoOfSeatsBooked(ticketBooking.getTotalSeats());
 
         String jsonMessage = objectMapper.writeValueAsString(paymentRequest);
         producerService.sendMessageForInsertPayments(jsonMessage);
