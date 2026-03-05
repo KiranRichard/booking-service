@@ -1,37 +1,50 @@
 package com.online.bus.ticket.reservation.booking.service;
 
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import com.online.bus.ticket.reservation.booking.enums.BookingStatus;
 import com.online.bus.ticket.reservation.booking.exception.PassengerException;
 import com.online.bus.ticket.reservation.booking.exception.TicketBookingException;
+import com.online.bus.ticket.reservation.booking.kafka.ProducerService;
 import com.online.bus.ticket.reservation.booking.model.Passenger;
 import com.online.bus.ticket.reservation.booking.model.TicketBooking;
 import com.online.bus.ticket.reservation.booking.model.TicketBookingDetails;
 import com.online.bus.ticket.reservation.booking.repository.TicketBookingDetailsRepository;
 import com.online.bus.ticket.reservation.booking.request.PassengerRequest;
+import com.online.bus.ticket.reservation.booking.request.PaymentRequest;
 import com.online.bus.ticket.reservation.booking.request.TicketReservationRequest;
 import com.online.bus.ticket.reservation.booking.response.*;
 import com.online.bus.ticket.reservation.booking.validator.PassengerRequestValidator;
-import lombok.AllArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.util.CollectionUtils;
 
+import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
 
 @Service
 @Slf4j
-@AllArgsConstructor
 public class TicketReservationService {
 
-    private final TicketBookingDetailsRepository ticketBookingDetailsRepository;
-    private final TicketBookingService ticketBookingService;
-    private final PassengerService passengerService;
-    private final BusInventoryClientService busInventoryClientService;
-    private final PassengerRequestValidator passengerRequestValidator;
+    @Autowired
+    private TicketBookingDetailsRepository ticketBookingDetailsRepository;
+    @Autowired
+    private TicketBookingService ticketBookingService;
+    @Autowired
+    private PassengerService passengerService;
+    @Autowired
+    private ProducerService producerService;
+    @Autowired
+    private BusInventoryClientService busInventoryClientService;
+    @Autowired
+    private PassengerRequestValidator passengerRequestValidator;
+    @Autowired
+    private ObjectMapper objectMapper;
 
-    public String createTicketBookingDetails(TicketReservationRequest ticketReservationRequest) {
+    public String createTicketBookingDetails(TicketReservationRequest ticketReservationRequest) throws JsonProcessingException {
         log.info("Inside TicketBookingDetailsService: createTicketBookingDetails method");
 
         //TO DO: Check for the availability of seats Rest api call to inventory microservice
@@ -42,8 +55,15 @@ public class TicketReservationService {
             throw new TicketBookingException("The bus inventory details are not found");
         }
         if (ticketReservationRequest.getTicketBookingRequest().getTotalSeats() <= busInventory.getAvailableSeats()){
-            performBooking(ticketReservationRequest);
-            //TO Do: kafka message to payment microservice
+            TicketBooking ticketBooking = performBooking(ticketReservationRequest);
+            if (Objects.nonNull(ticketBooking)) {
+                //TO Do: kafka message to payment microservice
+                calculateBillingAndInitiatePayment(busInventory.getPrice(), ticketBooking);
+            }
+            else {
+                log.info("[Error]: Number of passengers is zero, hence transaction is terminated");
+                throw new TicketBookingException("Number of passengers is zero, hence transaction is terminated");
+            }
         }
         else {
             log.info("[Error] Seats are not available");
@@ -53,30 +73,44 @@ public class TicketReservationService {
         return "Ticket Booking initiated successfully";
     }
 
-    private void performBooking(TicketReservationRequest ticketReservationRequest) {
+    private void calculateBillingAndInitiatePayment(double price, TicketBooking ticketBooking) throws JsonProcessingException {
+        double totalAmount = price * ticketBooking.getTotalSeats();
+        PaymentRequest paymentRequest = new PaymentRequest();
+        paymentRequest.setBookingId(ticketBooking.getBookingId());
+        paymentRequest.setAmount(totalAmount);
+        paymentRequest.setPaymentStatus(BookingStatus.PENDING.name());
+        paymentRequest.setPaymentDateTime(LocalDateTime.now());
+
+        String jsonMessage = objectMapper.writeValueAsString(paymentRequest);
+        producerService.sendMessageForInsertPayments(jsonMessage);
+    }
+
+    private TicketBooking performBooking(TicketReservationRequest ticketReservationRequest) {
         //TO Do: Checks if the seats are available for booking : then proceed, else stop
         TicketBooking ticketBooking = ticketBookingService.createTicketBooking(ticketReservationRequest.getTicketBookingRequest());
         if (ticketBooking.getBookingId()<=0) {
             log.info("[Error]: Ticket Booking creation in the database failed: {}", ticketBooking);
             throw new TicketBookingException("[Error]: Ticket Booking creation in the database failed");
         }
+        int passengerCount = 0;
         for (PassengerRequest passengerRequest : ticketReservationRequest.getPassengerRequests()) {
             Passenger passenger = passengerService.createPassenger(passengerRequest);
             if (passenger.getPassengerId()<=0) {
                 log.info("[Error]: Passenger creation in the database failed: {}", passenger);
                 throw new PassengerException("[Error]: Passenger creation in the database failed");
             }
+            passengerCount = passengerCount + 1;
             saveTicketBookingDetails(ticketBooking.getBookingId(), passenger.getPassengerId());
         }
-        //TO Do: kafka message to payment microservice
+        return ticketBooking;
     }
 
-    private void saveTicketBookingDetails(long bookingId, long passengerId) {
+    private TicketBookingDetails saveTicketBookingDetails(long bookingId, long passengerId) {
         TicketBookingDetails ticketBookingDetails = new TicketBookingDetails();
         ticketBookingDetails.setBookingId(bookingId);
         ticketBookingDetails.setPassengerId(passengerId);
         ticketBookingDetails.setStatus(BookingStatus.PENDING.name());
-        ticketBookingDetailsRepository.save(ticketBookingDetails);
+        return ticketBookingDetailsRepository.save(ticketBookingDetails);
     }
 
     public TicketDetails getTickets(long ticketBookingDetailsId) {

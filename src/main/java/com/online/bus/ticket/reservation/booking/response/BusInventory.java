@@ -11,6 +11,7 @@ public class BusInventory {
     private long busRouteNumber;
     private int totalSeats;
     private int availableSeats;
+    private double price;
     private LocalDateTime createdDateTime;
     private LocalDateTime updatedDateTime;
 }
