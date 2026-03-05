@@ -4,8 +4,8 @@ import com.online.bus.ticket.reservation.booking.exception.TicketBookingExceptio
 import com.online.bus.ticket.reservation.booking.model.TicketBooking;
 import com.online.bus.ticket.reservation.booking.repository.TicketBookingRepository;
 import com.online.bus.ticket.reservation.booking.request.TicketBookingRequest;
-import lombok.AllArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
 import java.util.List;
@@ -13,10 +13,10 @@ import java.util.Objects;
 
 @Service
 @Slf4j
-@AllArgsConstructor
 public class TicketBookingService {
 
-    private final TicketBookingRepository ticketBookingRepository;
+    @Autowired
+    private TicketBookingRepository ticketBookingRepository;
 
     public TicketBooking createTicketBooking(TicketBookingRequest ticketBookingRequest){
         TicketBooking ticketBooking = buildTicketBooking(ticketBookingRequest, new TicketBooking());

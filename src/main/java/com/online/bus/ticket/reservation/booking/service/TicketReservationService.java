@@ -24,6 +24,7 @@ import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
+import java.util.Optional;
 
 @Service
 @Slf4j
@@ -158,8 +159,8 @@ public class TicketReservationService {
                 passengerResponse.setFirstName(passenger.getFirstName());
                 passengerResponse.setLastName(passenger.getLastName());
                 passengerResponse.setAge(passenger.getAge());
-                passengerResponse.setGender(passengerResponse.getGender());
-                passengerResponse.setEmailId(passengerResponse.getEmailId());
+                passengerResponse.setGender(passenger.getGender());
+                passengerResponse.setEmailId(passenger.getEmailId());
                 passengerResponse.setContactNumber(passenger.getContactNumber());
                 AddressResponse addressResponse = new AddressResponse();
                 addressResponse.setBuildingNumber(passenger.getBuildingNumber());
@@ -179,6 +180,9 @@ public class TicketReservationService {
 
         TicketBookingResponse ticketBookingResponse = new TicketBookingResponse();
         ticketBookingResponse.setBookingId(ticketBooking.getBookingId());
+
+        List<TicketBookingDetails> ticketBookingDetails = ticketBookingDetailsRepository.findByBookingId(ticketBooking.getBookingId()).orElse(null);
+        ticketBookingResponse.setStatus(ticketBookingDetails.get(0).getStatus());
         ticketBookingResponse.setBusNumber(ticketBooking.getBusNumber());
         ticketBookingResponse.setBookingDateTime(ticketBooking.getBookingDateTime());
         ticketBookingResponse.setTravelDateTime(ticketBooking.getTravelDateTime());
@@ -189,5 +193,13 @@ public class TicketReservationService {
         ticketBookingResponse.setCreatedDateTime(ticketBooking.getCreatedDateTime());
         ticketBookingResponse.setUpdatedDateTime(ticketBooking.getUpdatedDateTime());
         return ticketBookingResponse;
+    }
+
+    public void confirmTicket(long bookingId) {
+        List<TicketBookingDetails> ticketBookingDetailsList = ticketBookingDetailsRepository.findByBookingId(bookingId).orElse(null);
+        for(TicketBookingDetails ticketBookingDetails : ticketBookingDetailsList) {
+            ticketBookingDetails.setStatus(BookingStatus.CONFIRMED.name());
+            ticketBookingDetailsRepository.save(ticketBookingDetails);
+        }
     }
 }
