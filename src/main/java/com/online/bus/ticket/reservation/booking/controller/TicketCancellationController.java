@@ -1,5 +1,6 @@
 package com.online.bus.ticket.reservation.booking.controller;
 
+import com.fasterxml.jackson.core.JsonProcessingException;
 import com.online.bus.ticket.reservation.booking.request.TicketCancelRequest;
 import com.online.bus.ticket.reservation.booking.service.TicketCancelService;
 import com.online.bus.ticket.reservation.booking.validator.TicketCancelRequestValidator;
@@ -20,7 +21,7 @@ public class TicketCancellationController {
     private final TicketCancelRequestValidator ticketCancelRequestValidator;
 
     @PostMapping
-    public String cancelTickets(@RequestBody TicketCancelRequest ticketCancelRequest){
+    public String cancelTickets(@RequestBody TicketCancelRequest ticketCancelRequest) throws JsonProcessingException {
         log.info("Inside TicketCancellationController cancelTickets");
 
         ticketCancelRequestValidator.validateTicketCancelRequest(ticketCancelRequest);

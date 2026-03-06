@@ -16,7 +16,7 @@ public class ProducerService {
         kafkaTemplate.send("booking-topic-insert", message);
     }
 
-    public void sendMessageForDeletePayments(String message) {
+    public void sendMessageForCancelPayments(String message) {
         kafkaTemplate.send("booking-topic-delete", message);
     }
 }

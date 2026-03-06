@@ -202,4 +202,12 @@ public class TicketReservationService {
             ticketBookingDetailsRepository.save(ticketBookingDetails);
         }
     }
+
+    public void cancelTicket(long bookingId) {
+        List<TicketBookingDetails> ticketBookingDetailsList = ticketBookingDetailsRepository.findByBookingId(bookingId).orElse(null);
+        for(TicketBookingDetails ticketBookingDetails : ticketBookingDetailsList) {
+            ticketBookingDetails.setStatus(BookingStatus.CANCELLED.name());
+            ticketBookingDetailsRepository.save(ticketBookingDetails);
+        }
+    }
 }

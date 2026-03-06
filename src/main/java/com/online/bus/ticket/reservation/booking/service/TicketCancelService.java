@@ -1,35 +1,47 @@
 package com.online.bus.ticket.reservation.booking.service;
 
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import com.online.bus.ticket.reservation.booking.enums.BookingStatus;
 import com.online.bus.ticket.reservation.booking.exception.PassengerException;
 import com.online.bus.ticket.reservation.booking.exception.TicketBookingException;
+import com.online.bus.ticket.reservation.booking.kafka.ProducerService;
 import com.online.bus.ticket.reservation.booking.model.Passenger;
 import com.online.bus.ticket.reservation.booking.model.TicketBooking;
 import com.online.bus.ticket.reservation.booking.model.TicketBookingDetails;
 import com.online.bus.ticket.reservation.booking.repository.TicketBookingDetailsRepository;
 import com.online.bus.ticket.reservation.booking.repository.TicketBookingRepository;
 import com.online.bus.ticket.reservation.booking.request.PassengerCancelRequest;
+import com.online.bus.ticket.reservation.booking.request.RefundRequest;
 import com.online.bus.ticket.reservation.booking.request.TicketCancelRequest;
-import lombok.AllArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.apache.commons.lang.StringUtils;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.util.CollectionUtils;
-import org.springframework.util.StringUtils;
 
+import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Objects;
 
 @Slf4j
 @Service
-@AllArgsConstructor
 public class TicketCancelService {
 
-    private final TicketBookingDetailsRepository ticketBookingDetailsRepository;
-    private final TicketBookingRepository ticketBookingRepository;
-    private final TicketBookingService ticketBookingService;
-    private final PassengerService passengerService;
+    @Autowired
+    private TicketBookingDetailsRepository ticketBookingDetailsRepository;
+    @Autowired
+    private TicketBookingRepository ticketBookingRepository;
+    @Autowired
+    private TicketBookingService ticketBookingService;
+    @Autowired
+    private PassengerService passengerService;
+    @Autowired
+    private ObjectMapper objectMapper;
+    @Autowired
+    private ProducerService producerService;
 
-    public String cancelTickets(TicketCancelRequest ticketCancelRequest) {
+    public String cancelTickets(TicketCancelRequest ticketCancelRequest) throws JsonProcessingException {
         log.info("Inside TicketCancelService: cancelTickets method");
 
         TicketBooking ticketBooking = ticketBookingService.getTicketBooking(ticketCancelRequest.getBookingId());
@@ -46,14 +58,34 @@ public class TicketCancelService {
 
         for (PassengerCancelRequest passengerCancelRequest : ticketCancelRequest.getPassengerCancelRequests()) {
             for(TicketBookingDetails ticketBookingDetails : ticketBookingDetailsList) {
-                if (StringUtils.pathEquals(ticketBookingDetails.getStatus(), BookingStatus.PENDING.name()) ||
-                        StringUtils.pathEquals(ticketBookingDetails.getStatus(), BookingStatus.CONFIRMED.name())) {
+                if (StringUtils.equalsIgnoreCase(ticketBookingDetails.getStatus(), BookingStatus.COMPLETED.name()) ||
+                        StringUtils.equalsIgnoreCase(ticketBookingDetails.getStatus(), BookingStatus.PAID.name()) ||
+                        StringUtils.equalsIgnoreCase(ticketBookingDetails.getStatus(), BookingStatus.CONFIRMED.name())) {
 
                     processCancelTickets(ticketCancelRequest, passengerCancelRequest, ticketBookingDetails, ticketBooking);
                 }
+                else {
+                    log.info("[ERROR] The booking cannot be cancelled");
+                }
             }
         }
+        refundRequestInitiated(ticketCancelRequest);
         return "Cancellation Request has been processed";
+    }
+
+    private void refundRequestInitiated(TicketCancelRequest ticketCancelRequest) throws JsonProcessingException {
+        TicketBooking ticketBooking = ticketBookingRepository.findById(ticketCancelRequest.getBookingId()).orElse(null);
+        if (Objects.isNull(ticketBooking) || Objects.isNull(ticketBooking.getBookingId())) {
+            log.info("[Error] Ticket booking id not available, hence cancellation is impossible");
+        }
+        RefundRequest refundRequest = new RefundRequest();
+        refundRequest.setBookingId(ticketCancelRequest.getBookingId());
+        refundRequest.setBusRouteNum(ticketBooking.getBookingId());
+        refundRequest.setRefundedDateTime(LocalDateTime.now());
+        refundRequest.setReasonForCancellation(ticketCancelRequest.getReasonForCancellation());
+
+        String jsonMessage = objectMapper.writeValueAsString(refundRequest);
+        producerService.sendMessageForCancelPayments(jsonMessage);
     }
 
     private void processCancelTickets(TicketCancelRequest ticketCancelRequest, PassengerCancelRequest passengerCancelRequest,
@@ -64,7 +96,7 @@ public class TicketCancelService {
             throw new PassengerException("Passenger details details are not present for ticket cancel request");
         }
         if (passengerCancelRequest.getPassengerId() == passenger.getPassengerId()) {
-            ticketBookingDetails.setStatus(BookingStatus.CANCELLED.name());
+            ticketBookingDetails.setStatus(BookingStatus.CANCELLATION_REQUESTED.name());
             ticketBookingDetails.setReasonForCancellation(ticketCancelRequest.getReasonForCancellation());
             ticketBookingDetails.setCancellationDateTime(ticketCancelRequest.getCancellationDateTime());
             ticketBookingDetailsRepository.save(ticketBookingDetails);

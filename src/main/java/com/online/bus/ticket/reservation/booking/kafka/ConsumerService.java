@@ -24,11 +24,20 @@ public class ConsumerService {
     }
 
     @KafkaListener(topics = "inventory-topic-update", groupId = "admin-group")
-    public void consumeInventoryPaymentupdate(String message) throws JsonProcessingException {
+    public void consumeInventoryPaymentUpdate(String message) throws JsonProcessingException {
         log.info("Received Message for booking update :{}", message);
         BookingUpdateRequest bookingUpdateRequest =
                 objectMapper.readValue(message, BookingUpdateRequest.class);
         ticketReservationService.confirmTicket(bookingUpdateRequest.getBookingId());
+        log.info("The message received: {} has been processed sucessfully.", message);
+    }
+
+    @KafkaListener(topics = "inventory-topic-delete", groupId = "admin-group")
+    public void consumeInventoryPaymentDelete(String message) throws JsonProcessingException {
+        log.info("Received Message for booking delete :{}", message);
+        BookingUpdateRequest bookingUpdateRequest =
+                objectMapper.readValue(message, BookingUpdateRequest.class);
+        ticketReservationService.cancelTicket(bookingUpdateRequest.getBookingId());
         log.info("The message received: {} has been processed sucessfully.", message);
     }
 }
