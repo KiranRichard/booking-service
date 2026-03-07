@@ -2,6 +2,7 @@ package com.online.bus.ticket.reservation.booking.kafka;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.online.bus.ticket.reservation.booking.enums.BookingStatus;
 import com.online.bus.ticket.reservation.booking.request.BookingUpdateRequest;
 import com.online.bus.ticket.reservation.booking.service.TicketReservationService;
 import lombok.extern.slf4j.Slf4j;
@@ -18,26 +19,30 @@ public class ConsumerService {
     @Autowired
     private TicketReservationService ticketReservationService;
 
-    @KafkaListener(topics = "booking-topic", groupId = "admin-group")
-    public void consume(String message) {
-        System.out.println("Received: " + message);
-    }
-
     @KafkaListener(topics = "inventory-topic-update", groupId = "admin-group")
     public void consumeInventoryPaymentUpdate(String message) throws JsonProcessingException {
-        log.info("Received Message for booking update :{}", message);
+        log.info("In ConsumerService consumeInventoryPaymentUpdate method, Received Message for booking update :{}", message);
         BookingUpdateRequest bookingUpdateRequest =
                 objectMapper.readValue(message, BookingUpdateRequest.class);
-        ticketReservationService.confirmTicket(bookingUpdateRequest.getBookingId());
-        log.info("The message received: {} has been processed sucessfully.", message);
+        ticketReservationService.updateTicketStatus(bookingUpdateRequest.getBookingId(), BookingStatus.CONFIRMED);
+        log.info("The message: {} has been processed and updated sucessfully.", message);
     }
 
     @KafkaListener(topics = "inventory-topic-delete", groupId = "admin-group")
-    public void consumeInventoryPaymentDelete(String message) throws JsonProcessingException {
-        log.info("Received Message for booking delete :{}", message);
+    public void consumeInventoryPaymentCancel(String message) throws JsonProcessingException {
+        log.info("In ConsumerService consumeInventoryPaymentCancel method, Received Message for booking cancel :{}", message);
         BookingUpdateRequest bookingUpdateRequest =
                 objectMapper.readValue(message, BookingUpdateRequest.class);
-        ticketReservationService.cancelTicket(bookingUpdateRequest.getBookingId());
-        log.info("The message received: {} has been processed sucessfully.", message);
+        ticketReservationService.updateTicketStatus(bookingUpdateRequest.getBookingId(), BookingStatus.CANCELLED);
+        log.info("The message: {} has been processed and cancelled sucessfully.", message);
+    }
+
+    @KafkaListener(topics = "payment-topic-reject", groupId = "admin-group")
+    public void consumePaymentReject(String message) throws JsonProcessingException {
+        log.info("In ConsumerService consumePaymentReject method, Received Message for booking reject :{}", message);
+        BookingUpdateRequest bookingUpdateRequest =
+                objectMapper.readValue(message, BookingUpdateRequest.class);
+        ticketReservationService.updateTicketStatus(bookingUpdateRequest.getBookingId(), BookingStatus.REJECTED);
+        log.info("The message: {} has been processed and rejected sucessfully.", message);
     }
 }

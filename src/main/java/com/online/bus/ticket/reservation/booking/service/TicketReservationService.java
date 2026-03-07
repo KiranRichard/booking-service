@@ -24,7 +24,6 @@ import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
-import java.util.Optional;
 
 @Service
 @Slf4j
@@ -195,19 +194,16 @@ public class TicketReservationService {
         return ticketBookingResponse;
     }
 
-    public void confirmTicket(long bookingId) {
-        List<TicketBookingDetails> ticketBookingDetailsList = ticketBookingDetailsRepository.findByBookingId(bookingId).orElse(null);
-        for(TicketBookingDetails ticketBookingDetails : ticketBookingDetailsList) {
-            ticketBookingDetails.setStatus(BookingStatus.CONFIRMED.name());
-            ticketBookingDetailsRepository.save(ticketBookingDetails);
-        }
-    }
+    public void updateTicketStatus(long bookingId, BookingStatus status) {
 
-    public void cancelTicket(long bookingId) {
-        List<TicketBookingDetails> ticketBookingDetailsList = ticketBookingDetailsRepository.findByBookingId(bookingId).orElse(null);
-        for(TicketBookingDetails ticketBookingDetails : ticketBookingDetailsList) {
-            ticketBookingDetails.setStatus(BookingStatus.CANCELLED.name());
-            ticketBookingDetailsRepository.save(ticketBookingDetails);
+        List<TicketBookingDetails> ticketBookingDetailsList =
+                ticketBookingDetailsRepository.findByBookingId(bookingId).orElse(null);
+
+        if (ticketBookingDetailsList != null) {
+            for (TicketBookingDetails ticketBookingDetails : ticketBookingDetailsList) {
+                ticketBookingDetails.setStatus(status.name());
+                ticketBookingDetailsRepository.save(ticketBookingDetails);
+            }
         }
     }
 }
