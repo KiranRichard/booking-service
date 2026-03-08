@@ -46,6 +46,7 @@ public class BusInventoryClientService {
         busInventory.setPrice(0);
         busInventory.setCreatedDateTime(LocalDateTime.now());
         busInventory.setUpdatedDateTime(LocalDateTime.now());
+        log.info("Response generated when circuit breaker is invoked is: {}", busInventory);
         return busInventory;
     }
 }
